@@ -1,10 +1,6 @@
+// Crear el semáforo en el DOM
 const semaforo = document.createElement('div');
 semaforo.className = 'semaforo';
-
-// estado (0 = apagado, 1 = encendido)
-let estadoRojo = 1;
-let estadoAmarillo = 0;
-let estadoVerde = 1;
 
 const luzRoja = document.createElement('div');
 luzRoja.className = 'luz roja';
@@ -20,32 +16,35 @@ semaforo.appendChild(luzVerde);
 
 document.body.appendChild(semaforo);
 
-// Control por valor
-function actualizarSemaforo() {
-  if (estadoRojo === 1) rojoEncendido(); else rojoApagado();
-  if (estadoAmarillo === 1) amarilloEncendido(); else amarilloApagado();
-  if (estadoVerde === 1) verdeEncendido(); else verdeApagado();
+// Función para actualizar luces según el color recibido
+function actualizarSemaforoPorColor(color) {
+  luzRoja.classList.toggle('encendida', color === 'rojo');
+  luzAmarilla.classList.toggle('encendida', color === 'amarillo');
+  luzVerde.classList.toggle('encendida', color === 'verde');
 }
 
+// URL pública para obtener estado del semáforo en Firebase (sin autenticación)
+const FIREBASE_URL = "https://semaforo-a10b9-default-rtdb.firebaseio.com/semaforo/estado.json";
 
-function rojoEncendido() {
-  luzRoja.classList.add('encendida');
-}
-function rojoApagado() {
-  luzRoja.classList.remove('encendida');
-}
-function amarilloEncendido() {
-  luzAmarilla.classList.add('encendida');
-}
-function amarilloApagado() {
-  luzAmarilla.classList.remove('encendida');
-}
-function verdeEncendido() {
-  luzVerde.classList.add('encendida');
-}
-function verdeApagado() {
-  luzVerde.classList.remove('encendida');
+// Función para consultar el estado en Firebase
+async function obtenerEstadoFirebase() {
+  try {
+    const response = await fetch(FIREBASE_URL);
+    if (!response.ok) throw new Error('Error al obtener datos de Firebase');
+    const data = await response.json();
+
+    if (data && data.color) {
+      actualizarSemaforoPorColor(data.color);
+    } else {
+      console.warn('Datos recibidos inválidos:', data);
+    }
+  } catch (error) {
+    console.error('Error en fetch Firebase:', error);
+  }
 }
 
-// Actualizar visual según valores iniciales
-actualizarSemaforo();
+// Consultar cada 2 segundos para mantener sincronizado el semáforo
+setInterval(obtenerEstadoFirebase, 2000);
+
+// También llamar la primera vez para que no espere 2 segundos al inicio
+obtenerEstadoFirebase();
